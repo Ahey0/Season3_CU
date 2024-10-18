@@ -1,0 +1,156 @@
+Library Ieee;
+Use Ieee.std_logic_1164.All;
+Use Ieee.Std_logic_Arith.All;
+Entity CU_Test is
+      Port(
+		      Inp           :  IN   Std_Logic_Vector(7 Downto 0);
+				HOL           :  IN   Std_Logic                   ;
+				Table_Switch  :  IN   Std_Logic                   ;
+				ClkUser       :  IN   Std_Logic                   ;
+				Clk           :  IN   Std_Logic                   ;
+				Dig1          :  OUT  STD_Logic_Vector(6 downto 0);
+				Dig2          :  OUT  STD_Logic_Vector(6 downto 0);
+				Dig3 	  		  :  OUT  STD_Logic_Vector(6 downto 0);
+				Dig4          :  OUT  STD_Logic_Vector(6 downto 0);
+				Dig5          :  OUT  STD_Logic_Vector(6 downto 0);
+				DigT          :  OUT  STD_Logic_Vector(6 downto 0);
+				Table_Led     :  OUT  STD_Logic_Vector(1 Downto 0)
+				);
+End Entity;
+Architecture CU_Test_Behave Of CU_Test Is 
+Component SC is
+port( 
+     clk   : in  std_logic                    ;
+     clear : in  std_logic                    ;
+     En    : in  std_logic                    ;
+     SCout : out std_logic_vector(3 downto 0) 
+     );
+END Component;
+Component IR_16 is
+port(
+     inir  : in   std_logic_vector(15 downto 0);
+	  outir : out  std_logic_vector(15 downto 0);
+	  clk   : in   std_logic                    ;
+	  load  : in   std_logic                     
+	  );
+End Component;
+Component Decoder3 is
+ port(
+      sel : in  std_logic_vector(2 downto 0) ;
+      o   : out std_logic_vector(7 downto 0) 
+      );
+End Component;
+Component  Decoder4 is
+ port(
+      sel : in  std_logic_vector(3 downto 0) ;
+      o   : out std_logic_vector(15 downto 0) 
+      );
+End Component;
+Component CONVERTER is
+port(
+     INS    : in  std_logic_vector(15 downto 0)  ;
+	  datadig1 : out integer  range 0 to 9          ;
+	  datadig2 : out integer  range 0 to 9          ;
+	  datadig3 : out integer  range 0 to 9          ;
+	  datadig4 : out integer  range 0 to 9          ;
+	  datadig5 : out integer  range 0 to 9          
+	  ); 
+END Component;
+Component Disp_CA is
+  Port(
+       datadig1 : in  integer  range 0 to 9          ;
+       datadig2 : in  integer  range 0 to 9          ;
+       datadig3 : in  integer  range 0 to 9          ;
+    	 datadig4 : in  integer  range 0 to 9          ;
+       datadig5 : in  integer  range 0 to 9          ;
+       Clk      : in  std_logic                      ;
+       dig1     : out std_logic_vector(6 downto 0)   ;
+       dig2     : out std_logic_vector(6 downto 0)   ;
+    	 dig3     : out std_logic_vector(6 downto 0)   ;
+       dig4     : out std_logic_vector(6 downto 0)   ;
+       dig5     : out std_logic_vector(6 downto 0)   
+       );  
+End Component;
+Component CU_16 is
+ port(
+      inir     : in    std_logic_vector(15 downto 0) ;
+      DR0      : in    std_logic                     ;
+      AC15     : in    std_logic                     ;
+      T0,T1    : in    std_logic                     ;
+      T2,T3    : in    std_logic                     ; 
+      T4,T5,T6 : in    std_logic                     ;
+      FGIin    : in    std_logic                     ;
+      FGOin    : in    std_logic                     ;
+      FGIout   : out   std_logic                     ;
+      FGOout   : out   std_logic                     ;
+      ALUsel   : out   std_logic_vector(2 downto 0)  ;
+      laodar   : out   std_logic                     ;
+      loadpc   : out   std_logic                     ;
+      laoddr   : out   std_logic                     ;
+      loadac   : out   std_logic                     ;
+      laodir   : out   std_logic                     ;
+      loadtr   : out   std_logic                     ;
+      loadoutr : out   std_logic                     ;
+      w        : out   std_logic                     ;
+      r        : out   std_logic                     ;
+      clearar  : out   std_logic                     ;
+      clearpc  : out   std_logic                     ;
+      clearac  : out   std_logic                     ;
+      incrar   : out   std_logic                     ;
+      incrpc   : out   std_logic                     ;
+      incrdr   : out   std_logic                     ;
+      incrac   : out   std_logic                     ;
+      clearsc  : out   std_logic                     ;
+      selb     : out   std_logic_vector(2 downto 0)  ;
+      Rin      : in    std_logic                     ;
+      IENin    : in    std_logic                     ;
+      Rout     : out   std_logic                     ;
+      Ein      : in    std_logic                     ;
+      loadE    : out   std_logic                     ;
+      NotE     : out   std_logic                     ;
+      clearE   : out   std_logic                     ;
+      AC0      : in    std_logic                     ;
+      IENo,So  : out   std_logic                    
+      );
+End Component ;
+component Clock_controll_50MHZ_T_50HZ is 
+  port(
+        clkin   : in  std_logic     ;
+        EN      : in  std_logic     ;
+        reset   : in  std_logic     ;
+        clkout  : out std_logic     
+       );
+End Component;
+Signal     IR_Data_L :  std_logic_vector(15 downto 0)  ;--Lower  8-BIt Data Of IR
+Signal     IR_Data_H :  std_logic_vector(15 downto 0)  ;--Higher 8-BIt Data Of IR
+Signal     IR_Data_IN:  std_logic_vector(15 downto 0)  ;--In  : Data Of IR
+Signal     IR_Data_O :  std_logic_vector(15 downto 0)  ;--Out : Data Of IR
+Signal     SC_Decoded:  std_logic_vector(6  downto 0)  ;--Decoded data of SC 
+Signal     SC_15     :  std_logic_vector(15 downto 0)  ;--Decoded data of SC in 16 bit for segment
+Signal	  datadig11 :  integer  range 0 to 9          ;--Converted Dig1 for Table1
+Signal	  datadig21 :  integer  range 0 to 9          ;--Converted Dig2 for Table1
+Signal	  datadig31 :  integer  range 0 to 9          ;--Converted Dig3 for Table1
+Signal	  datadig41 :  integer  range 0 to 9          ;--Converted Dig4 for Table1
+Signal	  datadig51 :  integer  range 0 to 9          ;--Converted Dig5 for Table1
+Signal	  datadig12 :  integer  range 0 to 9          ;--Converted Dig1 for Table2
+Signal	  datadig22 :  integer  range 0 to 9          ;--Converted Dig2 for Table2
+Signal	  datadig32 :  integer  range 0 to 9          ;--Converted Dig3 for Table2
+Signal	  datadig42 :  integer  range 0 to 9          ;--Converted Dig4 for Table2
+Signal	  datadig52 :  integer  range 0 to 9          ;--Converted Dig5 for Table2
+Signal     Table1    :  std_logic_vector(15 downto 0)  ;--Data Of Table 1
+Signal     Table2    :  std_logic_vector(15 downto 0)  ;--Data Of Table 2
+Signal     Clk0      :  Std_Logic                      ;--Controlled Clk
+Begin
+
+     Process (Clk0)
+            Begin 
+				     If clk0'event And Clk0='1' Then 
+					     If    HOL='0' Then 
+						     IR_Data_L  <=  Inp ;
+						  Elsif HOL='1' Then 
+						      IR_Data_H <=  Inp ;
+						  End If;
+					  End If;
+			    IR_Data_IN <= IR_Data_H & IR_Data_L ;
+		End Process;
+IR1 : IR_16 Port Map (IR_Data_IN,IR_Data_O,Clk,'1');
